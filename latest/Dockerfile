@@ -8,16 +8,20 @@
 
 FROM ubuntu:22.04 as setup
 
-ENV IB_GATEWAY_VERSION=10.20.1i
+ENV IB_GATEWAY_VERSION=10.22.1h
 ENV IB_GATEWAY_RELEASE_CHANNEL=latest
-ENV IBC_VERSION=3.15.2
+ENV IBC_VERSION=3.16.2
+ENV DEBIAN_FRONTEND=noninteractive
+ENV DEBCONF_NOWARNINGS="yes"
 
 # Prepare system
 RUN apt-get update -y
 RUN apt-get install --no-install-recommends --yes \
   curl \
   ca-certificates \
-  unzip
+  unzip \
+  apt-utils
+RUN apt-get upgrade -y
 
 WORKDIR /tmp/setup
 
@@ -37,9 +41,8 @@ COPY ./config/ibgateway/jts.ini /root/Jts/jts.ini
 RUN curl -sSL https://github.com/IbcAlpha/IBC/releases/download/${IBC_VERSION}/IBCLinux-${IBC_VERSION}.zip --output IBCLinux-${IBC_VERSION}.zip
 RUN mkdir /root/ibc
 RUN unzip ./IBCLinux-${IBC_VERSION}.zip -d /root/ibc
-RUN chmod -R u+x /root/ibc/*.sh 
-RUN chmod -R u+x /root/ibc/scripts/*.sh
 COPY ./config/ibc/config.ini.tmpl /root/ibc/config.ini.tmpl
+COPY ./config/ibc/IBC.jar /root/ibc/IBC.jar
 
 # Copy scripts
 COPY ./scripts /root/scripts
@@ -50,9 +53,9 @@ COPY ./scripts /root/scripts
 
 FROM ubuntu:22.04
 
-ENV IB_GATEWAY_VERSION=10.20.1i
+ENV IB_GATEWAY_VERSION=10.22.1h
 
-WORKDIR /root
+WORKDIR /opt
 
 # Prepare system
 RUN apt-get update -y
@@ -66,18 +69,33 @@ RUN apt-get install --no-install-recommends --yes \
   libgtk2.0-bin \
   socat \
   x11vnc
+RUN apt-get upgrade -y
 
 # Copy files
 COPY --from=setup /root/ .
-RUN chmod a+x /root/scripts/*.sh
 COPY --from=setup /usr/local/i4j_jres/ /usr/local/i4j_jres
 
+# Create the user
+ARG USERNAME=twsUser
+ARG USERID=1000
+RUN groupadd --gid $USERID $USERNAME \
+    && useradd --uid $USERID --gid $USERID -m $USERNAME 
+
+# Add permissions \
+RUN chmod a+x /opt/ibc/scripts/*.sh
+RUN chmod u+x /opt/scripts/*.sh
+RUN echo "" > /opt/Jts/launcher.log
+RUN chmod a+rw /opt/Jts/launcher.log
+USER $USERNAME
+
 # IBC env vars
-ENV TWS_MAJOR_VRSN ${IB_GATEWAY_VERSION}
-ENV TWS_PATH /root/Jts
-ENV IBC_PATH /root/ibc
-ENV IBC_INI /root/ibc/config.ini
-ENV TWOFA_TIMEOUT_ACTION exit
+ENV TWS_MAJOR_VRSN=${IB_GATEWAY_VERSION}
+ENV TWS_PATH=/opt/Jts
+ENV IBC_PATH=/opt/ibc
+ENV IBC_INI=/opt/ibc/config.ini
+ENV TWS_USERID=
+ENV TWS_PASSWORD=
+ENV TWOFA_TIMEOUT_ACTION=exit
 
 # Start run script
-CMD ["/root/scripts/run.sh"]
+ENTRYPOINT ["/opt/scripts/run.sh"]
