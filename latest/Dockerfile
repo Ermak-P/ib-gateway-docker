@@ -35,17 +35,17 @@ RUN curl -sSL https://github.com/UnusualAlpha/ib-gateway-docker/releases/downloa
 RUN sha256sum --check ./ibgateway-${IB_GATEWAY_VERSION}-standalone-linux-x64.sh.sha256
 RUN chmod a+x ./ibgateway-${IB_GATEWAY_VERSION}-standalone-linux-x64.sh
 RUN ./ibgateway-${IB_GATEWAY_VERSION}-standalone-linux-x64.sh -q -dir /root/Jts/ibgateway/${IB_GATEWAY_VERSION}
-COPY ./config/ibgateway/jts.ini /root/Jts/jts.ini
+ADD ./config/ibgateway/jts.ini /root/Jts/jts.ini
 
 # Install IBC
 RUN curl -sSL https://github.com/IbcAlpha/IBC/releases/download/${IBC_VERSION}/IBCLinux-${IBC_VERSION}.zip --output IBCLinux-${IBC_VERSION}.zip
 RUN mkdir /root/ibc
 RUN unzip ./IBCLinux-${IBC_VERSION}.zip -d /root/ibc
-COPY ./config/ibc/config.ini.tmpl /root/ibc/config.ini.tmpl
-COPY ./config/ibc/IBC.jar /root/ibc/IBC.jar
+ADD ./config/ibc/config.ini.tmpl /root/ibc/config.ini.tmpl
+ADD ./config/ibc/IBC.jar /root/ibc/IBC.jar
 
 # Copy scripts
-COPY ./scripts /root/scripts
+ADD ./scripts /root/scripts
 
 #
 # Build Stage: build production image
@@ -58,18 +58,10 @@ ENV IB_GATEWAY_VERSION=10.22.1h
 WORKDIR /opt
 
 # Prepare system
-RUN apt-get update -y
+RUN apt-get update -y   
 RUN apt-get install --no-install-recommends --yes \
-  gettext \
-  xvfb \
-  libxslt-dev \
-  libxrender1 \
-  libxtst6 \
-  libxi6 \
-  libgtk2.0-bin \
-  socat \
-  x11vnc
-RUN apt-get upgrade -y
+  default-jre \
+  xvfb
 
 # Copy files
 COPY --from=setup /root/ .
