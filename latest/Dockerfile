@@ -41,7 +41,7 @@ ADD ./config/ibgateway/jts.ini /root/Jts/jts.ini
 RUN curl -sSL https://github.com/IbcAlpha/IBC/releases/download/${IBC_VERSION}/IBCLinux-${IBC_VERSION}.zip --output IBCLinux-${IBC_VERSION}.zip
 RUN mkdir /root/ibc
 RUN unzip ./IBCLinux-${IBC_VERSION}.zip -d /root/ibc
-ADD ./config/ibc/config.ini.tmpl /root/ibc/config.ini.tmpl
+ADD ./config/ibc/config.ini.tmpl /root/ibc/config.ini
 ADD ./config/ibc/IBC.jar /root/ibc/IBC.jar
 
 # Copy scripts
@@ -61,7 +61,8 @@ WORKDIR /opt
 RUN apt-get update -y   
 RUN apt-get install --no-install-recommends --yes \
   default-jre \
-  xvfb
+  xvfb \
+  socat
 
 # Copy files
 COPY --from=setup /root/ .
@@ -78,6 +79,7 @@ RUN chmod a+x /opt/ibc/scripts/*.sh
 RUN chmod u+x /opt/scripts/*.sh
 RUN echo "" > /opt/Jts/launcher.log
 RUN chmod a+rw /opt/Jts/launcher.log
+RUN chmod a+rw /opt/Jts/jts.ini
 USER $USERNAME
 
 # IBC env vars
@@ -85,8 +87,6 @@ ENV TWS_MAJOR_VRSN=${IB_GATEWAY_VERSION}
 ENV TWS_PATH=/opt/Jts
 ENV IBC_PATH=/opt/ibc
 ENV IBC_INI=/opt/ibc/config.ini
-ENV TWS_USERID=
-ENV TWS_PASSWORD=
 ENV TWOFA_TIMEOUT_ACTION=exit
 
 # Start run script

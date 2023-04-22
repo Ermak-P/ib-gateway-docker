@@ -10,9 +10,7 @@ if [ -n "$VNC_SERVER_PASSWORD" ]; then
   /opt/scripts/run_x11_vnc.sh &
 fi
 
-envsubst < "${IBC_INI}.tmpl" > "${IBC_INI}"
-
-#/opt/scripts/fork_ports_delayed.sh &
+/opt/scripts/fork_ports_delayed.sh &
 
 /opt/ibc/scripts/ibcstart.sh "${TWS_MAJOR_VRSN}" -g \
      "--tws-path=${TWS_PATH}" \
